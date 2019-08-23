@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+
+
+        async function req() {
+            let promises = [];
+            for (let i = 0; i < 1 * 10; i++) {
+                promises.push(new Promise((resolve, reject) => {
+                    let formdata = new FormData();
+                    formdata.append("id", `from 4 - ${i}`);
+                    let xhr = new XMLHttpRequest();
+                    xhr.open("post", "http://localhost:3000/test");
+                    xhr.send(formdata);
+                    xhr.onreadystatechange = () => {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            resolve(xhr.response);
+                        }
+                    }
+                }))
+            }
+            return promises;
+        }
+
+        // Promise.all(req());
+
+
+        for (let i = 0; i < 1 * 10; i++) {
+            let formdata = new FormData();
+            formdata.append("id", `from 4 - ${i}`);
+            let xhr = new XMLHttpRequest();
+            xhr.open("post", "http://localhost:3000/test");
+            xhr.send(formdata);
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    resolve(xhr.response);
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>

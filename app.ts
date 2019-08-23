@@ -56,9 +56,6 @@ async function startServer() {
                 `Content-Type,Accept,X-Requested-With`);
             ctx.set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, HEAD, OPTIONS");
             await next();
-            if (!ctx.path.includes(".xlsx") && !(ctx.path.startsWith("/api/files/") && ctx.method === "GET")) {
-                ctx.body = Object.assign({}, ctx.body, { code: 0 });
-            }
         } catch (err) {
             console.log(err)
             ctx.body = {
@@ -84,6 +81,15 @@ async function startServer() {
         fs.unlinkSync(file.path);
 
         await next();
+    })
+
+    router.post("/test", async (ctx, next) => {
+        let id = ctx.request.body.id;
+        for (let i = 0; i < 7 * (10 ** 8); i++) { };
+        console.log(id);
+        ctx.body = {
+            code: id,
+        }
     })
 
     app.use(router.routes()).use(router.allowedMethods());
