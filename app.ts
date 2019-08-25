@@ -88,7 +88,7 @@ async function startServer() {
         for (let i = 0; i < 7 * (10 ** 8); i++) { };
         console.log(id);
         ctx.body = {
-            code: id,
+            code: `${id}1`,
         }
     })
 
