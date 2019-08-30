@@ -3,6 +3,7 @@ import * as Koa from "koa";
 import * as KoaBody from "koa-body";
 import * as Router from "koa-router";
 import * as serve from "koa-static";
+import * as websocketify from "koa-websocket";
 import * as path from "path";
 import * as fs from "fs";
 import { Const } from "./constants";
@@ -31,7 +32,7 @@ async function startFileServer() {
 }
 
 async function startServer() {
-    const app = new Koa();
+    const app = websocketify(new Koa());
 
     app.use(KoaBody({
         multipart: true,
@@ -92,7 +93,36 @@ async function startServer() {
         }
     })
 
+
+    let wsRouter = new Router();
+
+    wsRouter.prefix("/ws");
+    wsRouter.use(async (ctx, next) => {
+        // 中间件 验证请求者的身份
+        console.log("ws")
+        await next();
+    });
+    wsRouter.get("/test", async (ctx, next) => {
+
+        ctx.websocket.send(JSON.stringify({ code: 0, action: "action" }));
+
+        ctx.websocket.onmessage = async (e) => {
+            console.log("onmessage", e.data);
+            let data = JSON.parse(e.data);
+            if(data.type === "ha"){
+                ctx.websocket.send("right");
+            } else {
+                ctx.websocket.send("wrong");
+            }
+        };
+
+        ctx.websocket.onclose = (event) => {
+            console.log("onclose", event);
+        };
+    });
+
     app.use(router.routes()).use(router.allowedMethods());
+    app.ws.use(wsRouter.routes()).use(wsRouter.allowedMethods());
 
 
     app.listen(3000, "0.0.0.0");
