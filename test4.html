@@ -35,6 +35,7 @@
 
 
         for (let i = 0; i < 1 * 10; i++) {
+            console.log("--------------------- 44444 --------------")
             let formdata = new FormData();
             formdata.append("id", `from 4 - ${i}`);
             let xhr = new XMLHttpRequest();
@@ -42,7 +43,7 @@
             xhr.send(formdata);
             xhr.onreadystatechange = () => {
                 if (xhr.readyState === 4 && xhr.status === 200) {
-                    resolve(xhr.response);
+                    console.log(xhr.response);
                 }
             }
         }
