@@ -5,11 +5,26 @@ import * as Router from "koa-router";
 import * as serve from "koa-static";
 import * as path from "path";
 import * as fs from "fs";
+import * as os from "os";
+import * as cluster from "cluster";
 import { Const } from "./constants";
 
 main();
 
 async function main() {
+    
+    if (cluster.isMaster && process.env.env) {
+        console.log(`Master ${process.pid} is running`);
+
+        os.cpus().forEach((cpu) => {
+            cluster.fork();
+        });
+
+        cluster.on("exit", (worker, code, signal) => {
+            console.log(`worker ${worker.process.pid} died`);
+        });
+        return;
+    }
     await Promise.all([
         startServer(),
         startFileServer(),
