@@ -14,16 +14,16 @@
 
         function req() {
             let promises = [];
-            for (let i = 0; i < 1 * 10; i++) {
+            for (let i = 0; i < 1 * (10 ** 3); i++) {
                 promises.push(new Promise((resolve, reject) => {
                     let formdata = new FormData();
-                    formdata.append("id", `form 5 -${i}`);
+                    formdata.append("id", `from 4 - ${i}`);
                     let xhr = new XMLHttpRequest();
                     xhr.open("post", "http://localhost:3000/test");
                     xhr.send(formdata);
                     xhr.onreadystatechange = () => {
                         if (xhr.readyState === 4 && xhr.status === 200) {
-                            resolve(xhr.response);
+                            console.log(xhr.response);
                         }
                     }
                 }))
@@ -31,7 +31,22 @@
             return promises;
         }
 
-        Promise.all(req());
+        // Promise.all(req());
+
+
+        for (let i = 0; i < 3 * 10; i++) {
+            let formdata = new FormData();
+            formdata.append("id", `from 4 - ${i}`);
+            let xhr = new XMLHttpRequest();
+            xhr.open("post", "http://localhost:3000/test");
+            xhr.send(formdata);
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    console.log(xhr.response);
+                }
+            }
+        }
+
 
     </script>
 </body>

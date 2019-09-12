@@ -8,11 +8,15 @@ import * as fs from "fs";
 import * as os from "os";
 import * as cluster from "cluster";
 import { Const } from "./constants";
+import * as redis from "redis";
+import { timeConsum } from "./timeConsum";
+
 
 main();
 
+
 async function main() {
-    
+
     if (cluster.isMaster && process.env.env) {
         console.log(`Master ${process.pid} is running`);
 
@@ -25,7 +29,9 @@ async function main() {
         });
         return;
     }
+
     await Promise.all([
+        loadController(),
         startServer(),
         startFileServer(),
     ]);
@@ -57,6 +63,7 @@ async function startServer() {
         await next();
         const ms = Date.now() - start;
         ctx.set("X-Response-Time", `${ms}ms`);
+        console.log("time");
     });
 
     app.use(async (ctx, next) => {
@@ -70,6 +77,7 @@ async function startServer() {
             ctx.set("Access-Control-Allow-Headers",
                 `Content-Type,Accept,X-Requested-With`);
             ctx.set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, HEAD, OPTIONS");
+            console.log("header");
             await next();
         } catch (err) {
             console.log(err)
@@ -80,37 +88,92 @@ async function startServer() {
         }
     });
 
-    const router = new Router();
 
+    const redisClient = redis.createClient(6379, "127.0.0.1");
+    (function exc() {
+        redisClient.blpop("time", (err, v) => {
+            console.log(v)
+            if (typeof v === "function") {
+                setTimeout(() => {
+                    return (() => {
+                        exc()
+                        v();
+                    })()
+                }, 0);
+            }
+        });
+    })()
 
-
-    router.post("/upload", async (ctx, next) => {
-        const file = ctx.request.files.file;
-        console.log(file);
-
-        const dstFile = `${Math.random().toString()}${file.name}`;
-        if (!fs.existsSync(Const.uploadDir)) {
-            fs.mkdirSync(Const.uploadDir);
-        }
-        fs.copyFileSync(file.path, path.join(Const.uploadDir, dstFile));
-        fs.unlinkSync(file.path);
-
-        await next();
-    })
-
-    router.post("/test", async (ctx, next) => {
-        let id = ctx.request.body.id;
-        for (let i = 0; i < 7 * (10 ** 8); i++) { };
-        console.log(id);
-        ctx.body = {
-            code: `${id}2`,
-        }
-    })
-
+    const router = distributeRouter();
     app.use(router.routes()).use(router.allowedMethods());
-
 
     app.listen(3000, "0.0.0.0");
 
     console.log(`server start at port 3000`);
+}
+
+function loadController() {
+    let constrollers = {};
+    let controllerDirs = fs.readdirSync(path.resolve(__dirname, "./src/controller"))
+        .filter((dir) => {
+            return !dir.startsWith("base");
+        })
+    const serviceDirs = fs.readdirSync(path.resolve(__dirname, "./src/service"))
+        .filter((dir) => {
+            return !dir.startsWith("base");
+        })
+    console.log(controllerDirs);
+    controllerDirs.forEach((controllerDir) => {
+        const moduleName = controllerDir.split(".")[0];
+        let Controller = require(path.resolve(__dirname, "./src/controller", controllerDir)).default;
+        let serviceDir = serviceDirs.find((serviceDir) => {
+            return serviceDir.startsWith(moduleName);
+        })
+        const Service = require(path.resolve(__dirname, "./src/service", serviceDir)).default;
+        if (!Controller) {
+            throw new Error(`${moduleName}-没有相应的 controller 类`);
+        }
+        if (!Service) {
+            throw new Error(`${moduleName}-没有响应的 service 类`);
+        }
+        const methods = Object.getOwnPropertyNames(Controller.prototype)
+            .filter((name) => name !== "constructor");
+        methods.forEach((method) => {
+            Object.defineProperty(constrollers, method, {
+                get() {
+                    return {
+                        controller: Controller,
+                        service: Service,
+                    };
+                }
+            })
+        })
+    })
+    console.log(constrollers);
+    return constrollers;
+}
+
+function distributeRouter() {
+    let controllers = loadController();
+    let router = new Router();
+    router.get("/syncEvent", async (ctx, next) => {
+        let { eventName } = ctx.query;
+        let { controller: Controller, service: Service } = controllers[eventName];
+        console.log(Controller,Service);
+        if (Controller) {
+            let instance = new Controller(ctx, next, new Service());
+            await instance[eventName]();
+            await next();
+        }
+    });
+    router.post("/syncEvent", async (ctx, next) => {
+        let { eventName } = ctx.query;
+        let { controller: Controller, service: Service } = controllers[eventName];
+        if (Controller) {
+            let instance = new Controller(ctx, next, new Service());
+            await instance[eventName]();
+            await next();
+        }
+    })
+    return router;
 }
