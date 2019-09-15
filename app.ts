@@ -7,9 +7,8 @@ import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import * as cluster from "cluster";
-import { Const } from "./constants";
-import * as redis from "redis";
-import { timeConsum } from "./timeConsum";
+import * as crypto from "crypto";
+import redisClient from "./src/database/redisClient";
 
 
 main();
@@ -58,15 +57,20 @@ async function startServer() {
         multipart: true,
     } as any));
 
+    // 解析请求数据
+    app.use(parseRequest);
+
     app.use(async (ctx, next) => {
         const start = Date.now();
+        console.log("111111111上上上上上上")
         await next();
+        console.log("11111111111嘻嘻嘻嘻嘻嘻")
         const ms = Date.now() - start;
         ctx.set("X-Response-Time", `${ms}ms`);
-        console.log("time");
     });
 
     app.use(async (ctx, next) => {
+        console.log("222222222上上上上上上")
         await next();
         console.log(`${ctx.method} ${ctx.path} ${ctx.status} `);
     });
@@ -77,7 +81,6 @@ async function startServer() {
             ctx.set("Access-Control-Allow-Headers",
                 `Content-Type,Accept,X-Requested-With`);
             ctx.set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, HEAD, OPTIONS");
-            console.log("header");
             await next();
         } catch (err) {
             console.log(err)
@@ -89,20 +92,20 @@ async function startServer() {
     });
 
 
-    const redisClient = redis.createClient(6379, "127.0.0.1");
-    (function exc() {
-        redisClient.blpop("time", (err, v) => {
-            console.log(v)
-            if (typeof v === "function") {
-                setTimeout(() => {
-                    return (() => {
-                        exc()
-                        v();
-                    })()
-                }, 0);
-            }
-        });
-    })()
+    // const redisClient = redis.createClient(6379, "127.0.0.1");
+    // (function exc() {
+    //     redisClient.blpop("time", (err, v) => {
+    //         console.log(v)
+    //         if (typeof v === "function") {
+    //             setTimeout(() => {
+    //                 return (() => {
+    //                     exc()
+    //                     v();
+    //                 })()
+    //             }, 0);
+    //         }
+    //     });
+    // })()
 
     const router = distributeRouter();
     app.use(router.routes()).use(router.allowedMethods());
@@ -122,7 +125,6 @@ function loadController() {
         .filter((dir) => {
             return !dir.startsWith("base");
         })
-    console.log(controllerDirs);
     controllerDirs.forEach((controllerDir) => {
         const moduleName = controllerDir.split(".")[0];
         let Controller = require(path.resolve(__dirname, "./src/controller", controllerDir)).default;
@@ -134,22 +136,18 @@ function loadController() {
             throw new Error(`${moduleName}-没有相应的 controller 类`);
         }
         if (!Service) {
-            throw new Error(`${moduleName}-没有响应的 service 类`);
+            throw new Error(`${moduleName}-没有相应的 service 类`);
         }
         const methods = Object.getOwnPropertyNames(Controller.prototype)
             .filter((name) => name !== "constructor");
         methods.forEach((method) => {
             Object.defineProperty(constrollers, method, {
                 get() {
-                    return {
-                        controller: Controller,
-                        service: Service,
-                    };
+                    return new Controller(new Service());
                 }
             })
         })
     })
-    console.log(constrollers);
     return constrollers;
 }
 
@@ -158,22 +156,49 @@ function distributeRouter() {
     let router = new Router();
     router.get("/syncEvent", async (ctx, next) => {
         let { eventName } = ctx.query;
-        let { controller: Controller, service: Service } = controllers[eventName];
-        console.log(Controller,Service);
-        if (Controller) {
-            let instance = new Controller(ctx, next, new Service());
-            await instance[eventName]();
+        let instance = controllers[eventName];
+        if (instance) {
+            await instance[eventName](ctx);
             await next();
         }
     });
-    router.post("/syncEvent", async (ctx, next) => {
-        let { eventName } = ctx.query;
-        let { controller: Controller, service: Service } = controllers[eventName];
-        if (Controller) {
-            let instance = new Controller(ctx, next, new Service());
-            await instance[eventName]();
-            await next();
+
+    router.get("/asyncEvent", async (ctx, next) => {
+        const { eventName } = ctx.query;
+        const instance = controllers[eventName];
+        if(instance){
+            const sign = crypto.createHash("sha256").update(JSON.stringify(ctx.standardRequest));
+            redisClient.lpush("asyncEvent",ctx.standardRequest)
         }
+
     })
     return router;
+}
+
+async function parseRequest(ctx: Koa.BaseContext,next: () => Promise<any>) {
+    const { query, file } = ctx;
+    const { body } = ctx.request;
+    let result = {
+        query,
+        body,
+        file,
+    }
+    ctx.standardRequest = result;
+    await next();
+}
+
+export interface IStandardRequest<T> {
+    query: {
+        eventName: string,
+        [key: string]: any,
+    },
+    body: T,
+    file: {
+        path: string,
+        type: string,
+    }
+}
+
+export interface ParsedContext<T = any> extends Koa.BaseContext {
+    standardRequest: IStandardRequest<T>
 }
