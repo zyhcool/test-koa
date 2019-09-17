@@ -7,6 +7,9 @@ class RedisClient {
     constructor() {
         this.connection = redis.createClient(6379, "127.0.0.1");
     }
+    getConnection(){
+        return this.connection;
+    }
 
     async lpush(key: string, item: any) {
         this.connection.lpush(key, item);

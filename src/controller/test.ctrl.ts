@@ -14,6 +14,7 @@ export default class TestController extends BaseController<TestService> {
             code: 0,
         }
     }
+    
     async async_test(data: IGettest) {
         console.log(data);
         console.log("from async test");

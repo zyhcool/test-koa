@@ -1,0 +1,4 @@
+
+enum redisKeys  {
+    request = "df"
+}

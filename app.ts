@@ -166,16 +166,18 @@ function distributeRouter() {
     router.get("/asyncEvent", async (ctx, next) => {
         const { eventName } = ctx.query;
         const instance = controllers[eventName];
-        if(instance){
-            const sign = crypto.createHash("sha256").update(JSON.stringify(ctx.standardRequest));
-            redisClient.lpush("asyncEvent",ctx.standardRequest)
+        if (instance) {
+            const sign = crypto.createHash("md5").update(JSON.stringify(ctx.standardRequest)).digest("hex");
+            redisClient.lpush("asyncEvent", sign);
+            redisClient.getConnection().rpush("queue", sign);
+            redisClient.getConnection().hset("asyncEvent", sign, JSON.stringify(ctx.body));
         }
-
+        await next();
     })
     return router;
 }
 
-async function parseRequest(ctx: Koa.BaseContext,next: () => Promise<any>) {
+async function parseRequest(ctx: Koa.BaseContext, next: () => Promise<any>) {
     const { query, file } = ctx;
     const { body } = ctx.request;
     let result = {
