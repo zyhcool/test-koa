@@ -10,24 +10,22 @@
 
 <body>
     <script>
+        document.documentElement.addEventListener("click", (e) => {
+            let ws = new WebSocket("ws://localhost:3000/asyncEvent");
 
-        let ws = new WebSocket("ws://localhost:3000/asyncEvent?eventName=test");
-        ws.onopen = (e) => {
-        }
+            ws.onmessage = (e) => {
+                console.log("message: ", JSON.parse(e.data));
+            }
 
-        ws.onmessage = (e) => {
-            console.log("message: ", JSON.parse(e.data));
-        }
-        ws.onopen = () => {
-            document.documentElement.addEventListener("click", (e) => {
-
+            ws.onopen = () => {
                 ws.send(JSON.stringify({
                     name: "zyh",
                     pass: "123",
                 }))
 
-            })
-        }
+            }
+
+        })
 
 
     </script>

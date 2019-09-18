@@ -1,5 +1,5 @@
 export default class Util {
-    static promisefy(fn) {
+    static promisefy(fn,ctx: any=null) {
         return (...args) => {
             return new Promise<any>((resolve, reject) => {
                 const cb = (err, data) => {
@@ -10,7 +10,7 @@ export default class Util {
                     }
                 }
                 args.push(cb);
-                fn.apply(null, args);
+                fn.apply(ctx, args);
             })
         }
     }

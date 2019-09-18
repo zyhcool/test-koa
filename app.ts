@@ -9,6 +9,8 @@ import * as os from "os";
 import * as cluster from "cluster";
 import * as crypto from "crypto";
 import redisClient from "./src/database/redisClient";
+import * as websocketfy from "koa-websocket";
+import WebsocketClient from "./websocket";
 
 
 main();
@@ -30,7 +32,6 @@ async function main() {
     }
 
     await Promise.all([
-        loadController(),
         startServer(),
         startFileServer(),
     ]);
@@ -51,7 +52,7 @@ async function startFileServer() {
 }
 
 async function startServer() {
-    const app = new Koa();
+    const app = websocketfy(new Koa());
 
     app.use(KoaBody({
         multipart: true,
@@ -62,15 +63,12 @@ async function startServer() {
 
     app.use(async (ctx, next) => {
         const start = Date.now();
-        console.log("111111111上上上上上上")
         await next();
-        console.log("11111111111嘻嘻嘻嘻嘻嘻")
         const ms = Date.now() - start;
         ctx.set("X-Response-Time", `${ms}ms`);
     });
 
     app.use(async (ctx, next) => {
-        console.log("222222222上上上上上上")
         await next();
         console.log(`${ctx.method} ${ctx.path} ${ctx.status} `);
     });
@@ -83,7 +81,6 @@ async function startServer() {
             ctx.set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, HEAD, OPTIONS");
             await next();
         } catch (err) {
-            console.log(err)
             ctx.body = {
                 code: 2,
                 message: "服务器错误",
@@ -92,23 +89,14 @@ async function startServer() {
     });
 
 
-    // const redisClient = redis.createClient(6379, "127.0.0.1");
-    // (function exc() {
-    //     redisClient.blpop("time", (err, v) => {
-    //         console.log(v)
-    //         if (typeof v === "function") {
-    //             setTimeout(() => {
-    //                 return (() => {
-    //                     exc()
-    //                     v();
-    //                 })()
-    //             }, 0);
-    //         }
-    //     });
-    // })()
-
     const router = distributeRouter();
     app.use(router.routes()).use(router.allowedMethods());
+
+    const wsRouter = distributeWsRouter();
+    app.ws.use(wsRouter.routes()).use(wsRouter.allowedMethods());
+    // app.ws.onConnection = (ws,req)=>{
+    //     console.log(app.ws.server.options.server._connections);
+    // }
 
     app.listen(3000, "0.0.0.0");
 
@@ -168,12 +156,44 @@ function distributeRouter() {
         const instance = controllers[eventName];
         if (instance) {
             const sign = crypto.createHash("md5").update(JSON.stringify(ctx.standardRequest)).digest("hex");
-            redisClient.lpush("asyncEvent", sign);
-            redisClient.getConnection().rpush("queue", sign);
-            redisClient.getConnection().hset("asyncEvent", sign, JSON.stringify(ctx.body));
+            redisClient.rpush("queue", sign);
+            redisClient.hset("asyncEvent", sign, JSON.stringify(ctx.standardRequest));
+        }
+        ctx.body = {
+            code: 0,
+            message: "success",
         }
         await next();
     })
+    return router;
+}
+
+function distributeWsRouter() {
+    let controllers = loadController();
+    let router = new Router();
+    router.get("/syncEvent", async (ctx, next) => {
+        const { eventName } = ctx.query;
+        const instance = controllers[eventName];
+        console.log(eventName)
+        if (instance) {
+            let ws = new WebsocketClient(ctx.websocket);
+            await instance[eventName](ctx.standardRequest,ws);
+        }
+    });
+    
+    router.get("/asyncEvent", async (ctx, next) => {
+        const { eventName } = ctx.query;
+        const instance = controllers[eventName];
+        console.log(instance);
+        if (instance) {
+            console.log("jdk")
+            // const sign = crypto.createHash("md5").update(JSON.stringify(ctx.standardRequest)).digest("hex");
+            const sign = "jdkjfdjk"
+            console.log(sign)
+            redisClient.rpush("queue", sign);
+            redisClient.hset("asyncEvent", sign, JSON.stringify(ctx.standardRequest));
+        }
+    });
     return router;
 }
 
