@@ -9,24 +9,44 @@
 </head>
 
 <body>
+    <button id="sync">test sync</button>
+    <button id="async">test async</button>
     <script>
-
-        let ws = new WebSocket("ws://localhost:3000/asyncEvent?eventName=test");
-        ws.onopen = (e) => {
+        let sync_btn = document.querySelector("#sync");
+        let async_btn = document.querySelector("#async");
+        sync_btn.addEventListener("click", handlerSync)
+        async_btn.addEventListener("click", handlerAsync);
+        function handlerSync() {
+            let ws = new WebSocket("ws://localhost:3000/syncEvent?eventName=test");
+            ws.onopen = (e) => {
+            }
+            ws.onmessage = (e) => {
+                console.log("message: ", JSON.parse(e.data));
+            }
+            ws.onopen = () => {
+                document.documentElement.addEventListener("click", (e) => {
+                    ws.send(JSON.stringify({
+                        name: "sync",
+                        pass: "123",
+                    }))
+                })
+            }
         }
-
-        ws.onmessage = (e) => {
-            console.log("message: ", JSON.parse(e.data));
-        }
-        ws.onopen = () => {
-            document.documentElement.addEventListener("click", (e) => {
-
-                ws.send(JSON.stringify({
-                    name: "zyh",
-                    pass: "123",
-                }))
-
-            })
+        function handlerAsync() {
+            let ws = new WebSocket("ws://localhost:3000/asyncEvent?eventName=test");
+            ws.onopen = (e) => {
+            }
+            ws.onmessage = (e) => {
+                console.log("message: ", JSON.parse(e.data));
+            }
+            ws.onopen = () => {
+                document.documentElement.addEventListener("click", (e) => {
+                    ws.send(JSON.stringify({
+                        name: "async",
+                        pass: "123",
+                    }))
+                })
+            }
         }
 
 

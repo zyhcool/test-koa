@@ -2,52 +2,50 @@
 import * as redis from "redis";
 import Util from "../util/util";
 
-class RedisClient {
-    private connection: redis.RedisClient;
-    private queueConnection: redis.RedisClient;
+export default class RedisClient {
+    private client: redis.RedisClient;
+
     constructor() {
-        this.connection = redis.createClient(6379, "127.0.0.1");
-        this.queueConnection = redis.createClient(6379, "127.0.0.1");
-        this.exc();
+        this.client = this.createConnection()
     }
-    async createConnection() {
-        return redis.createClient(6379, "127.0.0.1");
+    private createConnection() {
+        const client: redis.RedisClient = redis.createClient(6379, "127.0.0.1");
+        // auth 
+        // ...
+        client.on("connect", () => {
+            console.log("redis client connect");
+        })
+        client.on("ready", (err) => {
+            if (err) {
+                console.log(err.message, err.stacks);
+            } else {
+                console.log("redis client ready");
+            }
+        })
+        return client;
     }
 
-    async rpush(key: string, item: any) {
-        const rpush = Util.promisefy(this.connection.rpush, this.connection);
+    async rpush(key: string, item: string) {
+        const rpush = Util.promisefy(this.client.rpush, this.client);
         let result = await rpush(key, item);
         return result;
     }
 
     async hset(key: string, field: string, value: string) {
-        const hset = Util.promisefy(this.connection.hset, this.connection);
+        const hset = Util.promisefy(this.client.hset, this.client);
         let result = await hset(key, field, value);
         return result;
     }
 
     async hget(key: string, field: string) {
-        const hget = Util.promisefy(this.connection.hget, this.connection);
+        const hget = Util.promisefy(this.client.hget, this.client);
         let result = await hget(key, field);
         return result;
     }
 
     async blpop(key: string, delay: number) {
-        const blpop = Util.promisefy(this.queueConnection.blpop, this.queueConnection);
+        const blpop = Util.promisefy(this.client.blpop, this.client);
         let [k, value]: [string, string] = await blpop(key, delay);
         return value;
     }
-
-    async exc() {
-        const sign = await this.blpop("queue", 0);
-        const dataStringfy = await this.hget("asyncEvent", sign);
-        const data = JSON.parse(dataStringfy);
-        setTimeout(() => {
-            console.log(data,i++)
-        }, 0);
-        return this.exc();
-    }
 }
-let i=0;
-const redisClient = new RedisClient();
-export default redisClient;

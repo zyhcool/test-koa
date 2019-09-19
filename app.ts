@@ -11,13 +11,14 @@ import * as crypto from "crypto";
 import redisClient from "./src/database/redisClient";
 import * as websocketfy from "koa-websocket";
 import WebsocketClient from "./websocket";
+import Redis from "./src/redis";
+import BaseController from "./src/controller/base.ctrl";
 
-
+const controllers: any = {};
 main();
 
 
 async function main() {
-
     if (cluster.isMaster && process.env.env) {
         console.log(`Master ${process.pid} is running`);
 
@@ -30,11 +31,10 @@ async function main() {
         });
         return;
     }
-
-    await Promise.all([
-        startServer(),
-        startFileServer(),
-    ]);
+    await loadController();
+    await startServer();
+    await startFileServer();
+    await initRedis();
 }
 
 async function startFileServer() {
@@ -60,6 +60,7 @@ async function startServer() {
 
     // 解析请求数据
     app.use(parseRequest);
+    app.ws.use(parseRequest);
 
     app.use(async (ctx, next) => {
         const start = Date.now();
@@ -103,8 +104,11 @@ async function startServer() {
     console.log(`server start at port 3000`);
 }
 
-function loadController() {
-    let constrollers = {};
+async function initRedis() {
+    Redis.init(controllers);
+}
+
+async function loadController() {
     let controllerDirs = fs.readdirSync(path.resolve(__dirname, "./src/controller"))
         .filter((dir) => {
             return !dir.startsWith("base");
@@ -129,39 +133,31 @@ function loadController() {
         const methods = Object.getOwnPropertyNames(Controller.prototype)
             .filter((name) => name !== "constructor");
         methods.forEach((method) => {
-            Object.defineProperty(constrollers, method, {
+            Object.defineProperty(controllers, method, {
                 get() {
                     return new Controller(new Service());
                 }
             })
         })
     })
-    return constrollers;
 }
 
 function distributeRouter() {
-    let controllers = loadController();
     let router = new Router();
     router.get("/syncEvent", async (ctx, next) => {
+        const request: IStandardRequest = ctx.standardRequest;
         let { eventName } = ctx.query;
         let instance = controllers[eventName];
-        if (instance) {
-            await instance[eventName](ctx);
-            await next();
-        }
+        const response: any = await getResponse(request, instance, eventName);
+        ctx.body = response;
+        await next()
     });
 
     router.get("/asyncEvent", async (ctx, next) => {
         const { eventName } = ctx.query;
         const instance = controllers[eventName];
         if (instance) {
-            const sign = crypto.createHash("md5").update(JSON.stringify(ctx.standardRequest)).digest("hex");
-            redisClient.rpush("queue", sign);
-            redisClient.hset("asyncEvent", sign, JSON.stringify(ctx.standardRequest));
-        }
-        ctx.body = {
-            code: 0,
-            message: "success",
+            Redis.asyncEventQueue(ctx.standardRequest);
         }
         await next();
     })
@@ -169,30 +165,23 @@ function distributeRouter() {
 }
 
 function distributeWsRouter() {
-    let controllers = loadController();
     let router = new Router();
     router.get("/syncEvent", async (ctx, next) => {
         const { eventName } = ctx.query;
         const instance = controllers[eventName];
-        console.log(eventName)
         if (instance) {
             let ws = new WebsocketClient(ctx.websocket);
-            await instance[eventName](ctx.standardRequest,ws);
+            await instance[eventName](ctx.standardRequest, ws);
         }
     });
-    
+
     router.get("/asyncEvent", async (ctx, next) => {
         const { eventName } = ctx.query;
         const instance = controllers[eventName];
-        console.log(instance);
         if (instance) {
-            console.log("jdk")
-            // const sign = crypto.createHash("md5").update(JSON.stringify(ctx.standardRequest)).digest("hex");
-            const sign = "jdkjfdjk"
-            console.log(sign)
-            redisClient.rpush("queue", sign);
-            redisClient.hset("asyncEvent", sign, JSON.stringify(ctx.standardRequest));
+            Redis.asyncEventQueue(ctx.standardRequest);
         }
+        await next();
     });
     return router;
 }
@@ -200,27 +189,27 @@ function distributeWsRouter() {
 async function parseRequest(ctx: Koa.BaseContext, next: () => Promise<any>) {
     const { query, file } = ctx;
     const { body } = ctx.request;
-    let result = {
+    let result: IStandardRequest = {
         query,
         body,
         file,
+        token: "faketoken",
     }
     ctx.standardRequest = result;
     await next();
 }
 
-export interface IStandardRequest<T> {
-    query: {
-        eventName: string,
-        [key: string]: any,
-    },
-    body: T,
-    file: {
-        path: string,
-        type: string,
+async function getResponse(request: IStandardRequest, instance: BaseController<any>, eventName: string) {
+    let response: any = {};
+    if (!instance) {
+        return {
+            code: 404,
+            message: `没有 ${eventName} 方法`,
+        }
     }
-}
-
-export interface ParsedContext<T = any> extends Koa.BaseContext {
-    standardRequest: IStandardRequest<T>
+    response = await instance[eventName](request);
+    if (Object.keys(response).length === 0) {
+        throw new Error(`${eventName} 方法没有定义返回数据`);
+    }
+    return response;
 }

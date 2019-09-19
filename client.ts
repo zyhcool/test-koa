@@ -18,7 +18,7 @@ var options = {
     type:"text",
 };
 
-for (let i = 0; i < 20; i++) {
+for (let i = 0; i < 1; i++) {
     var req = http.request(options, function (res) {
         res.setEncoding('utf8');
         res.on('data', function (chunk) {

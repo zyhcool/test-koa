@@ -1,7 +1,6 @@
 import BaseController from "./base.ctrl";
 import { BaseContext } from "koa";
 import TestService from "../service/test.service";
-import { ParsedContext } from "../../app";
 import redisClient from "../database/redisClient";
 import WebsocketClient from "../../websocket";
 
@@ -11,18 +10,13 @@ export default class TestController extends BaseController<TestService> {
     }
     async test(data: IGettest, ws?: WebsocketClient) {
         if (ws && ws instanceof WebsocketClient) {
+            console.log("delegate");
             this.service.delegateTest(ws);
             return;
         }
+        console.log("async")
         let response = await this.service.test();
-    }
-
-    async async_test(data: IGettest) {
-        console.log(data);
-        console.log("from async test");
-        return {
-            code: 0,
-        }
+        return response;
     }
 }
 
