@@ -9,7 +9,48 @@
 </head>
 
 <body>
+    <input type="file" />
+    <button id="btn">upload</button>
+    <script>
+        const btn = document.querySelector("#btn");
+        let file;
+        let chunkSize = 10 * 1024 * 1024;
+        let chunkNum;
+        let start = 0;
+        let end = start + chunkSize;
+        const input = document.querySelector("input");
+        input.onchange = (e) => {
+            file = e.target.files[0];
+            console.log(file);
+            chunkNum = Math.ceil(file.size / chunkSize);
+        }
 
+        btn.addEventListener("click", (e) => {
+            const ws = new WebSocket("ws://localhost:3000/syncEvent?eventName=uploadFile");
+            ws.onopen = (e) => {
+                const timestart = new Date().getTime();
+                let hash = new Date().getTime();
+                let fr = new FileReader();
+                fr.readAsBinaryString(file);
+                fr.onload = (e) => {
+                    console.log((new Date().getTime() - timestart) / 1000);
+                    for (let i = 0; i < chunkNum; i++) {
+                        let chunk = e.target.result.slice(start, end);
+                        ws.send(JSON.stringify({
+                            file: chunk,
+                            filename: file.name,
+                            index: i,
+                            chunkNum,
+                            hash,
+                        }));
+                        start += chunkSize;
+                        end += chunkSize;
+                        console.log(chunkSize * i / file.size);
+                    }
+                }
+            }
+        })
+    </script>
 </body>
 
 </html>

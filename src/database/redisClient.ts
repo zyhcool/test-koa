@@ -43,9 +43,52 @@ export default class RedisClient {
         return result;
     }
 
-    async blpop(key: string, delay: number) {
+    async blpop(key: string, delay: number = 0) {
         const blpop = Util.promisefy(this.client.blpop, this.client);
         let [k, value]: [string, string] = await blpop(key, delay);
         return value;
     }
+
+    async lpop(key: string) {
+        const lpop = Util.promisefy(this.client.lpop, this.client);
+        let result: string = await lpop(key);
+        return result;
+    }
+
+    async lset(key: string, index: number, value: string) {
+        let exists = await this.exists(key);
+        if (!exists) {
+            await this.rpush(key, value);
+        }
+        const lset = Util.promisefy(this.client.lset, this.client);
+        let result = await lset(key, index, value);
+        return result;
+    }
+
+    async llen(key: string) {
+        const llen = Util.promisefy<string>(this.client.llen, this.client);
+        let result = await llen(key);
+        return Number.parseInt(result);
+    }
+
+    async exists(key: string) {
+        const exists = Util.promisefy<number>(this.client.exists, this.client);
+        let result = await exists(key);
+        return result ? true : false;
+    }
+
+    async append(key: string, value: string) {
+        const append = Util.promisefy(this.client.append, this.client);
+        let result = await append(key, value);
+        return result;
+    }
+
+    async get(key: string) {
+        const get = Util.promisefy(this.client.get, this.client);
+        let result = await get(key);
+        return result;
+    }
+
+
+
 }

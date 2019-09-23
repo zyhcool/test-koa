@@ -1,4 +1,4 @@
-export default class WebsocketClient {
+export default class WebsocketClient<R = any, S = any> {
     private _connection: any;
     constructor(websocket: any) {
         this._connection = websocket;
@@ -7,12 +7,12 @@ export default class WebsocketClient {
     get onmessage() {
         return this._connection.onmessage;
     }
-    set onmessage(fn: (e: { data: any, [key: string]: any }) => void) {
+    set onmessage(fn: (e: { data: R, [key: string]: any }) => void) {
         this._connection.onmessage = fn;
     }
 
-    send(data: any) {
-        this._connection.send(data);
+    send(data: S) {
+        this._connection.send(typeof data === "object" ? JSON.stringify(data) : data);
     }
 
     get onerror() {

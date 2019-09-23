@@ -1,7 +1,7 @@
 export default class Util {
-    static promisefy(fn,ctx: any=null) {
+    static promisefy<T = any>(fn, ctx: any = null) {
         return (...args) => {
-            return new Promise<any>((resolve, reject) => {
+            return new Promise<T>((resolve, reject) => {
                 const cb = (err, data) => {
                     if (err) {
                         reject(err);

@@ -2,6 +2,7 @@
 export enum redisKeys {
     event = "event",
     queue = "queue",
+    file = "file",
 }
 
 export interface IAsyncEventReqData<T = any> {

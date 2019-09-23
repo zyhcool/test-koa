@@ -1,6 +1,10 @@
 import RedisClient from "../database/redisClient";
 import { createHash } from "crypto";
 import { IAsyncEventReqData, redisKeys } from "../types/redis.type";
+import * as fs from "fs";
+import * as path from "path";
+import FileUtil from "../util/file.util";
+import { IFileData } from "../types/file.type";
 
 export default class Redis {
     private static controller: any;
@@ -46,5 +50,26 @@ export default class Redis {
             await this.commonConnection.hset(redisKeys.event, sign, JSON.stringify(data));
             await this.commonConnection.rpush(redisKeys.queue, sign);
         }
+    }
+
+    static async storeFileBinary(key: string, value: string) {
+        // await this.commonConnection.append(key, value);
+        await this.commonConnection.rpush(key, value);
+    }
+
+    static async getFileListLength(key: string) {
+        return await this.commonConnection.llen(key);
+    }
+
+    static async writeFile(data: IFileData, key: string, name: string) {
+        let a = Buffer.alloc(0);
+        for (let i = 0; i < data.chunkNum; i++) {
+            let value = await this.commonConnection.lpop(key);
+            const buffer = Buffer.from(value, "binary");
+            a = Buffer.concat([a, buffer]);
+        }
+        let dir = FileUtil.mkUploadDir();
+        const filename = `${new Date().getTime()}${Math.ceil(Math.random() * 1000)}-${name}`
+        fs.appendFileSync(path.resolve(dir, filename), a);
     }
 }
