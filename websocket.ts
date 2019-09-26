@@ -1,7 +1,9 @@
-export default class WebsocketClient<R = any, S = any> {
+export default class WebsocketClient<Q=any,R = any, S = any> {
     private _connection: any;
-    constructor(websocket: any) {
+    queryData: Q;
+    constructor(websocket: any,query: any) {
         this._connection = websocket;
+        this.queryData = query;
     }
 
     get onmessage() {

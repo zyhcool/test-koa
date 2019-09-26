@@ -5,11 +5,11 @@ import Util from "../util/util";
 export default class RedisClient {
     private client: redis.RedisClient;
 
-    constructor() {
-        this.client = this.createConnection()
+    constructor(port: number = 6379, host: string = "127.0.0.1", options?: any) {
+        this.client = this.createConnection(port, host, options);
     }
-    private createConnection() {
-        const client: redis.RedisClient = redis.createClient(6379, "127.0.0.1");
+    private createConnection(port: number, host: string, options?: any) {
+        const client: redis.RedisClient = redis.createClient(port, host, options);
         // auth 
         // ...
         client.on("connect", () => {
@@ -51,7 +51,7 @@ export default class RedisClient {
 
     async lpop(key: string) {
         const lpop = Util.promisefy(this.client.lpop, this.client);
-        let result: string = await lpop(key);
+        let result = await lpop(key);
         return result;
     }
 

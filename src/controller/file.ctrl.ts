@@ -15,5 +15,7 @@ export default class FileController extends BaseController<FileService> {
             this.service.delegateUploadFile(ws);
             return;
         }
+        await this.service.uploadFile(data.file);
+        
     }
 }

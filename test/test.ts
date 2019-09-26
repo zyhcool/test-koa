@@ -1,8 +1,23 @@
-import Redis from "../src/redis";
-import RedisClient from "../src/database/redisClient";
 
-let redisclient = new RedisClient();
-(async ()=>{
-  let a = await redisclient.lpop("file|1569230947128");
-  console.log(a)
-})();
+
+ async function async1() {
+    console.log("aysnc11");
+    let aha = async2();
+    console.log(aha)
+}
+ function async2(){
+    return;
+}
+async function async() {
+    console.log("aysnc");
+}
+
+async1();
+
+/*
+async11
+async21
+async
+async22
+async12
+*/

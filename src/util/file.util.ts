@@ -12,18 +12,28 @@ export default class FileUtil {
         return uploadDir;
     }
 
-    static mkUploadTemp(hash: string){
-        if(!fs.existsSync(Const.tempUploadDir)){
-            fs.mkdirSync(path.resolve("./",Const.tempUploadDir));
+    static mkUploadTemp(hash: string) {
+        if (!fs.existsSync(Const.tempUploadDir)) {
+            fs.mkdirSync(path.resolve("./", Const.tempUploadDir));
         }
-        const hashPath = path.join(Const.tempUploadDir,hash);
-        if(!fs.existsSync(hashPath)){
+        const hashPath = path.join(Const.tempUploadDir, hash);
+        if (!fs.existsSync(hashPath)) {
             fs.mkdirSync(hashPath);
         }
         return hashPath;
     }
 
-    // static handleUpload(ctx:BaseContext){
-    //     const 
-    // }
+    static handleHttpUpload(file: IFile) {
+        const { path: temPath, name, hash } = file;
+        const uploadDir = this.mkUploadDir();
+        const filename = `${hash}-${name}`;
+        const filepath = path.resolve(uploadDir, filename);
+        if (!fs.existsSync(filepath)) {
+            let ws = fs.createWriteStream(filepath, { flags: "a+" });
+            let rs = fs.createReadStream(temPath);
+            rs.pipe(ws);
+            fs.unlinkSync(temPath);
+        }
+        return filename;
+    }
 }

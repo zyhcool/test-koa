@@ -4,10 +4,9 @@ export enum FileStatus {
     end = "end",
 }
 
-export interface IFileData {
-    hash: string,
-    index: number;
-    file: string;
+
+export interface IWsUploadFileQueryData {
     filename: string;
-    chunkNum: number;
+    hash: string;
+    chunkNum: string;
 }

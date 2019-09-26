@@ -1,13 +1,16 @@
 
-interface IStandardRequest<T=any>{
-    query:{
+interface IStandardRequest<T = any> {
+    query: {
         eventName: string,
         [key: string]: any,
     },
     body: T,
-    file:{
-        path: string,
-        type: string,
-    },
+    file: IFile,
     token: string,
+}
+
+interface IFile {
+    path: string;
+    name: string;
+    hash: string;
 }

@@ -10,11 +10,11 @@
 
 <body>
     <input type="file" />
-    <button id="btn">upload</button>
+    <button id="btn1">方案一：upload</button>
+    <button id="btn2">方案二：upload</button>
     <script>
-        const btn = document.querySelector("#btn");
         let file;
-        let chunkSize = 10 * 1024 * 1024;
+        let chunkSize = 30 * 1024;
         let chunkNum;
         let start = 0;
         let end = start + chunkSize;
@@ -25,7 +25,9 @@
             chunkNum = Math.ceil(file.size / chunkSize);
         }
 
-        btn.addEventListener("click", (e) => {
+        const btn1 = document.querySelector("#btn1");
+        // 方案一：将文件转化为二进制字符串，再分段上传
+        btn1.addEventListener("click", (e) => {
             const ws = new WebSocket("ws://localhost:3000/syncEvent?eventName=uploadFile");
             ws.onopen = (e) => {
                 const timestart = new Date().getTime();
@@ -33,7 +35,7 @@
                 let fr = new FileReader();
                 fr.readAsBinaryString(file);
                 fr.onload = (e) => {
-                    console.log((new Date().getTime() - timestart) / 1000);
+                    console.log(`读取时间：${(new Date().getTime() - timestart) / 1000}`);
                     for (let i = 0; i < chunkNum; i++) {
                         let chunk = e.target.result.slice(start, end);
                         ws.send(JSON.stringify({
@@ -47,6 +49,20 @@
                         end += chunkSize;
                         console.log(chunkSize * i / file.size);
                     }
+                }
+            }
+        })
+        const btn2 = document.querySelector("#btn2");
+        btn2.addEventListener("click", (e) => {
+            const hash = new Date().getTime();
+            const ws = new WebSocket(`ws://localhost:3000/syncEvent?eventName=uploadFile&hash=${hash}&filename=${file.name}&chunkNum=${chunkNum}`);
+            ws.onopen = (e) => {
+                for (let i = 0; i < chunkNum; i++) {
+                    const chunk = file.slice(start, end);
+                    console.log(chunkSize * i / file.size);
+                    ws.send(chunk);
+                    start += chunkSize;
+                    end += chunkSize;
                 }
             }
         })

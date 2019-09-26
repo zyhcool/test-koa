@@ -56,11 +56,14 @@ async function startServer() {
 
     app.use(KoaBody({
         multipart: true,
+        formidable: {
+            maxFileSize: 1 * 1024 * 1024 * 1024,
+        },
+        parsedMethods: ["POST", "GET", "PATCH", "PUT", "HEAD", "DELETE"],
     } as any));
 
     // 解析请求数据
     app.use(parseRequest);
-    app.ws.use(parseRequest);
 
     app.use(async (ctx, next) => {
         const start = Date.now();
@@ -95,9 +98,6 @@ async function startServer() {
 
     const wsRouter = distributeWsRouter();
     app.ws.use(wsRouter.routes()).use(wsRouter.allowedMethods());
-    // app.ws.onConnection = (ws,req)=>{
-    //     console.log(app.ws.server.options.server._connections);
-    // }
 
     app.listen(3000, "0.0.0.0");
 
@@ -170,7 +170,7 @@ function distributeWsRouter() {
         const { eventName } = ctx.query;
         const instance = controllers[eventName];
         if (instance) {
-            let ws = new WebsocketClient(ctx.websocket);
+            let ws = new WebsocketClient(ctx.websocket, ctx.query);
             await instance[eventName](ctx.standardRequest, ws);
         }
     });
@@ -187,8 +187,9 @@ function distributeWsRouter() {
 }
 
 async function parseRequest(ctx: Koa.BaseContext, next: () => Promise<any>) {
-    const { query, file } = ctx;
+    const { query } = ctx;
     const { body } = ctx.request;
+    let file = getFile(ctx);
     let result: IStandardRequest = {
         query,
         body,
@@ -212,4 +213,13 @@ async function getResponse(request: IStandardRequest, instance: BaseController<a
         throw new Error(`${eventName} 方法没有定义返回数据`);
     }
     return response;
+}
+
+function getFile(ctx: Koa.BaseContext) {
+    if (!ctx.request.files.file) {
+        return undefined;
+    }
+    const hash = ctx.request.body.hash || ctx.query.hash;
+    const { path, name } = ctx.request.files.file;
+    return { path, name, hash };
 }
