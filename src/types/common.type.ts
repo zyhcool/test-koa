@@ -1,5 +1,5 @@
 
-interface IStandardRequest<T = any> {
+export interface IStandardRequest<T = any> {
     query: {
         eventName: string,
         [key: string]: any,
@@ -9,7 +9,7 @@ interface IStandardRequest<T = any> {
     token: string,
 }
 
-interface IFile {
+export interface IFile {
     path: string;
     name: string;
     hash: string;

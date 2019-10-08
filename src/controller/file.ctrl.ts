@@ -4,6 +4,7 @@ import TestService from "../service/test.service";
 import redisClient from "../database/redisClient";
 import WebsocketClient from "../../websocket";
 import FileService from "../service/file.service";
+import { IStandardRequest } from "../types/common.type";
 
 export default class FileController extends BaseController<FileService> {
     constructor(service: FileService) {

@@ -8,6 +8,7 @@ import Redis from "../redis";
 import { FileStatus, IWsUploadFileQueryData } from "../types/file.type";
 import { redisKeys } from "../types/redis.type";
 import FileUtil from "../util/file.util";
+import { IFile } from "../types/common.type";
 
 export default class FileService extends BaseService {
     constructor() {

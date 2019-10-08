@@ -2,6 +2,7 @@ import { Const } from "../../constants";
 import * as fs from "fs"
 import * as path from "path"
 import { BaseContext } from "koa";
+import { IFile } from "../types/common.type";
 
 export default class FileUtil {
     static mkUploadDir(): string {

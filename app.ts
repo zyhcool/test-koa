@@ -1,4 +1,3 @@
-
 import * as Koa from "koa";
 import * as KoaBody from "koa-body";
 import * as Router from "koa-router";
@@ -13,6 +12,7 @@ import * as websocketfy from "koa-websocket";
 import WebsocketClient from "./websocket";
 import Redis from "./src/redis";
 import BaseController from "./src/controller/base.ctrl";
+import { IStandardRequest } from "./src/types/common.type";
 
 const controllers: any = {};
 main();
@@ -89,6 +89,7 @@ async function startServer() {
                 code: 2,
                 message: "服务器错误",
             };
+            console.log(err);
         }
     });
 
@@ -216,7 +217,7 @@ async function getResponse(request: IStandardRequest, instance: BaseController<a
 }
 
 function getFile(ctx: Koa.BaseContext) {
-    if (!ctx.request.files.file) {
+    if (!ctx.request.files || !ctx.request.files.file) {
         return undefined;
     }
     const hash = ctx.request.body.hash || ctx.query.hash;

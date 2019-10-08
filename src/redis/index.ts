@@ -1,6 +1,7 @@
 import RedisClient from "../database/redisClient";
 import { createHash } from "crypto";
 import { IAsyncEventReqData, redisKeys } from "../types/redis.type";
+import { IStandardRequest } from "../types/common.type";
 
 export default class Redis {
     private static controller: any;

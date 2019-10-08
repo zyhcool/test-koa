@@ -1,23 +1,11 @@
+const stream = require("stream");
+const fs = require("fs");
 
+let Stream = stream.Stream;
 
- async function async1() {
-    console.log("aysnc11");
-    let aha = async2();
-    console.log(aha)
-}
- function async2(){
-    return;
-}
-async function async() {
-    console.log("aysnc");
-}
+let s = new Stream();
+console.log(s);
 
-async1();
-
-/*
-async11
-async21
-async
-async22
-async12
-*/
+let rs = fs.createReadStream("./test/test.html");
+console.log(s)
+console.log(s.readable)
