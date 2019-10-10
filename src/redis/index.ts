@@ -48,4 +48,13 @@ export default class Redis {
             await this.commonConnection.rpush(redisKeys.queue, sign);
         }
     }
+
+    static async getById(id: string):Promise<string>{
+        let value = await this.commonConnection.get(id);
+        return value;
+    }
+
+    static async storeById(id:string,value: string){
+        await this.commonConnection.set(id,value);
+    }
 }

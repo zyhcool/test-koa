@@ -89,6 +89,13 @@ export default class RedisClient {
         return result;
     }
 
+    async set(key: string, value: any) {
+        const set = Util.promisefy(this.client.set, this.client);
+        let result = await set(key, value);
+        return result;
+    }
+
+
 
 
 }

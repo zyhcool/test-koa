@@ -10,6 +10,7 @@ export default class FileController extends BaseController<FileService> {
     constructor(service: FileService) {
         super(service);
     }
+
     async uploadFile(data: IStandardRequest, ws?: WebsocketClient) {
         if (ws && ws instanceof WebsocketClient) {
             console.log("delegate");

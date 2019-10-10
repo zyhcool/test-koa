@@ -109,6 +109,7 @@ async function initRedis() {
     Redis.init(controllers);
 }
 
+
 async function loadController() {
     let controllerDirs = fs.readdirSync(path.resolve(__dirname, "./src/controller"))
         .filter((dir) => {
@@ -132,12 +133,13 @@ async function loadController() {
             throw new Error(`${moduleName}-没有相应的 service 类`);
         }
         const methods = Object.getOwnPropertyNames(Controller.prototype)
-            .filter((name) => name !== "constructor");
+            .filter((name) => name !== "constructor" && name !== "service");
         methods.forEach((method) => {
             Object.defineProperty(controllers, method, {
-                get() {
-                    return new Controller(new Service());
-                }
+                value: new Controller(new Service(`${method}Service`)),
+                configurable: false,
+                writable: false,
+                enumerable: true,
             })
         })
     })
@@ -210,7 +212,7 @@ async function getResponse(request: IStandardRequest, instance: BaseController<a
         }
     }
     response = await instance[eventName](request);
-    if (Object.keys(response).length === 0) {
+    if (!response || Object.keys(response).length === 0) {
         throw new Error(`${eventName} 方法没有定义返回数据`);
     }
     return response;

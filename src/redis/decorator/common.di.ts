@@ -1,8 +1,7 @@
 import "reflect-metadata"
 
 
-
-export class Injector {
+class Injector {
     private readonly providerMap: Map<any, any> = new Map();
     private readonly instanceMap: Map<any, any> = new Map();
     public setProvider(key: any, value: any): void {
@@ -23,7 +22,7 @@ export class Injector {
     }
 }
 
-export const rootInjector = new Injector();
+const rootInjector = new Injector();
 
 export function Inject(): (_constructor: any, propertyName: string) => any {
     return function (_constructor: any, propertyName: string): any {
@@ -51,40 +50,23 @@ export function Injectable(): (_constructor: any) => any {
 }
 
 
-class No {
-    constructor(){};
-    public cloth: Cloth;
-}
 
-@Injectable()
-class Cloth {
-    constructor(){
+
+import Redis from "..";
+
+export function rdsFindById<S>() {
+    return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
+        let oldMethod = descriptor.value;
+        descriptor.value = async function (id: string) {
+            let value = await Redis.getById(id);
+            let response: S;
+            if (!value) {
+                response = await oldMethod.call(this, id);
+                await Redis.storeById(id, JSON.stringify(response));
+            } else {
+                response = JSON.parse(value);
+            }
+            return response;
+        }
     }
-    public name: string = '麻布';
 }
-
-@Injectable()
-class Clothes extends No {
-    constructor(){
-        super();
-    }
-    @Inject()
-    public cloth: Cloth;
-}
-
-class Human {
-    @Inject()
-    public clothes: Clothes;
-}
-
-const pepe = new Human();
-console.log(pepe.clothes.cloth);
-
-
-// {
-//   clothes: {
-//      cloth: {
-//        name: '麻布'
-//      }
-//   }
-//}
