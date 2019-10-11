@@ -1,5 +1,5 @@
 import "reflect-metadata"
-
+import Redis from "..";
 
 class Injector {
     private readonly providerMap: Map<any, any> = new Map();
@@ -52,7 +52,6 @@ export function Injectable(): (_constructor: any) => any {
 
 
 
-import Redis from "..";
 
 export function rdsFindById<S>() {
     return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
@@ -70,3 +69,31 @@ export function rdsFindById<S>() {
         }
     }
 }
+
+
+
+export function InjectService<T>(controller: Constructor<T>): T {
+    let params = Reflect.getMetadata("design:paramtypes", controller);
+    let args = params.map((service) => {
+        return new service();
+    })
+    return new controller(...args);
+}
+
+type Constructor<T = any> = new (...args: any[]) => T;
+
+const ClassDec = (): ClassDecorator => {
+    return (target) => {
+        return;
+    }
+};
+const PropertyDec = (): PropertyDecorator => {
+    return (target, key) => {
+        return;
+    }
+};
+const MethodDec = (): MethodDecorator => {
+    return (target, key, desc) => {
+        return;
+    }
+};

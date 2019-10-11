@@ -14,3 +14,9 @@ export interface IFile {
     name: string;
     hash: string;
 }
+
+export interface IResonse<T = any> {
+    code: number;
+    message: string;
+    data: T;
+}

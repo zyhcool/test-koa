@@ -2,13 +2,14 @@ import { BaseService } from "./base.service";
 import WebsocketClient from "../../websocket";
 import { Test } from "../model/test.model";
 import { rdsFindById } from "../redis/decorator/common.di";
+import { IResonse } from "../types/common.type";
 
 
 export default class TestService extends BaseService {
     constructor() {
         super();
     }
-    async test() {
+    async test(){
         console.log("from test service");
     }
 

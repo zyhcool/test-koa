@@ -2,89 +2,54 @@ import "reflect-metadata"
 
 
 
-export class Injector {
-    private readonly providerMap: Map<any, any> = new Map();
-    private readonly instanceMap: Map<any, any> = new Map();
-    public setProvider(key: any, value: any): void {
-        if (!this.providerMap.has(key)) this.providerMap.set(key, value);
+type Constructor<T = any> = new (...args: any[]) => T;
+
+const ClassDec = (): ClassDecorator => {
+    return (target) => {
+        return;
     }
-    public getProvider(key: any): any {
-        return this.providerMap.get(key);
+};
+const PropertyDec = (): PropertyDecorator => {
+    return (target, key) => {
+        return;
     }
-    public setInstance(key: any, value: any): void {
-        if (!this.instanceMap.has(key)) this.instanceMap.set(key, value);
+};
+const MethodDec = (): MethodDecorator => {
+    return (target, key, desc) => {
+        return;
     }
-    public getInstance(key: any): any {
-        if (this.instanceMap.has(key)) return this.instanceMap.get(key);
-        return null;
-    }
-    public setValue(key: any, value: any): void {
-        if (!this.instanceMap.has(key)) this.instanceMap.set(key, value);
-    }
+};
+
+class OtherService {
+    constructor(){}
+    a=0;
+}
+@ClassDec()
+class TestService {
+    constructor(public readonly otherService: OtherService) { };
+    @PropertyDec()
+    public name: string;
+    @MethodDec()
+    public handle(event: number) {
+        console.log(this.otherService.a);
+     }
 }
 
-export const rootInjector = new Injector();
+const Factory = <T>(target: Constructor<T>): T => {
+    // 获取所有注入的服务
+    console.log(Reflect.getMetadata('design:paramtypes', target)[0].name);
+    console.log(Reflect.getMetadata('design:type', target))
+    console.log(Reflect.getMetadata('design:returntype', target));
 
-export function Inject(): (_constructor: any, propertyName: string) => any {
-    return function (_constructor: any, propertyName: string): any {
-        const propertyType: any = Reflect.getMetadata('design:type', _constructor, propertyName);
-        console.log(propertyType)
-        const injector: Injector = rootInjector;
+    console.log(Reflect.getMetadata('design:paramtypes', target.prototype, "handle"));
+    console.log(Reflect.getMetadata('design:type', target.prototype, "handle"))
+    console.log(Reflect.getMetadata('design:returntype', target.prototype, "handle"));
 
-        let providerInsntance = injector.getInstance(propertyType);
-        if (!providerInsntance) {
-            let providerClass = injector.getProvider(propertyType);
-            providerInsntance = new providerClass();
-            injector.setInstance(propertyType, providerInsntance);
-        }
-        _constructor[propertyName] = providerInsntance;
+    console.log(Reflect.getMetadata('design:paramtypes', target.prototype, "name"))
+    console.log(Reflect.getMetadata('design:returntype', target.prototype, "name"));
+    console.log(Reflect.getMetadata('design:type', target.prototype, "name"))
+    return new target();
+};
 
-        return (_constructor as any)[propertyName];
-    };
-}
+Factory(TestService);
 
-export function Injectable(): (_constructor: any) => any {
-    return function (_constructor: any): any {
-        rootInjector.setProvider(_constructor, _constructor);
-        return _constructor;
-    };
-}
-
-
-class No {
-    constructor(){};
-    public cloth: Cloth;
-}
-
-@Injectable()
-class Cloth {
-    constructor(){
-    }
-    public name: string = '麻布';
-}
-
-@Injectable()
-class Clothes extends No {
-    constructor(){
-        super();
-    }
-    @Inject()
-    public cloth: Cloth;
-}
-
-class Human {
-    @Inject()
-    public clothes: Clothes;
-}
-
-const pepe = new Human();
-console.log(pepe.clothes.cloth);
-
-
-// {
-//   clothes: {
-//      cloth: {
-//        name: '麻布'
-//      }
-//   }
-//}

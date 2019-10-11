@@ -13,6 +13,8 @@ import WebsocketClient from "./websocket";
 import Redis from "./src/redis";
 import BaseController from "./src/controller/base.ctrl";
 import { IStandardRequest } from "./src/types/common.type";
+import { InjectService } from "./src/redis/decorator/common.di";
+import { Factory } from "./test/test";
 
 const controllers: any = {};
 main();
@@ -137,6 +139,7 @@ async function loadController() {
         methods.forEach((method) => {
             Object.defineProperty(controllers, method, {
                 value: new Controller(new Service(`${method}Service`)),
+                // value: Factory(Controller),
                 configurable: false,
                 writable: false,
                 enumerable: true,

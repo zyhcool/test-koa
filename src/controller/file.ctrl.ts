@@ -5,7 +5,9 @@ import redisClient from "../database/redisClient";
 import WebsocketClient from "../../websocket";
 import FileService from "../service/file.service";
 import { IStandardRequest } from "../types/common.type";
+import { InjectService } from "../redis/decorator/common.di";
 
+// @InjectService
 export default class FileController extends BaseController<FileService> {
     constructor(service: FileService) {
         super(service);
