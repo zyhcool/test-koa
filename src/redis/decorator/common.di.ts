@@ -71,7 +71,6 @@ export function rdsFindById<S>() {
 }
 
 
-
 export function InjectService<T>(controller: Constructor<T>): T {
     let params = Reflect.getMetadata("design:paramtypes", controller);
     let args = params.map((service) => {
