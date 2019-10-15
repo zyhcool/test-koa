@@ -89,9 +89,14 @@ export default class RedisClient {
         return result;
     }
 
-    async set(key: string, value: any, flag: string = "ex", expire?: number) {
+    async set(key: string, value: any, flag?: string, expire?: number) {
         const set = Util.promisefy(this.client.set, this.client);
-        let result = await set(key, value, flag, expire);
+        let result;
+        if (!flag || !expire) {
+            result = await set(key, value);
+        } else {
+            result = await set(key, value, flag, expire);
+        }
         return result;
     }
 

@@ -1,6 +1,7 @@
 import { BaseService } from "./base.service";
 import WebsocketClient from "../../websocket";
 import { Test } from "../model/test.model";
+import { rdsFindById } from "../redis/decorator/common.di";
 
 
 export default class TestService extends BaseService {
@@ -35,10 +36,10 @@ export default class TestService extends BaseService {
         return test;
     }
 
-    // @rdsFindById() // 先查缓存再查数据库
+    @rdsFindById() // 先查缓存再查数据库
     async findTest(id: string){
         // let en = await Test.findById(id).exec();
-        let en = await Test.findById(id).cache().exec();
+        let en = await Test.findById(id).exec();
         console.log("en",en)
         return en;
     }

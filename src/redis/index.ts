@@ -85,9 +85,11 @@ export default class Redis {
                                 exec
                                     .apply(this, args)
                                     .then(async (results) => {
-                                        let result = await that.commonConnection.set(key, JSON.stringify(results), "ex", 10);
-                                        if (result === "OK") {
-                                            resolve(results);
+                                        if (results && results.length > 0) {
+                                            let result = await that.commonConnection.set(key, JSON.stringify(results), "ex", 10);
+                                            if (result === "OK") {
+                                                resolve(results);
+                                            }
                                         }
                                     })
                                     .catch((e) => {
