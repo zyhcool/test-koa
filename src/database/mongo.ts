@@ -1,4 +1,6 @@
 import { Mongoose, Connection } from "mongoose";
+import * as cachegoose from "cachegoose";
+import Redis from "../redis";
 
 class MongoConnection {
     connection: Connection;
@@ -8,6 +10,9 @@ class MongoConnection {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
+
+        // 扩展 mongoose 用于 redis 的缓存方法
+        Redis.initMongooseWithRedis(mongoose);
         this.connection = mongoose.connection;
         this.connection
             .on("ready", () => {

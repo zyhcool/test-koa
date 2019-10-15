@@ -81,17 +81,17 @@ export function InjectService<T>(controller: Constructor<T>): T {
 
 type Constructor<T = any> = new (...args: any[]) => T;
 
-const ClassDec = (): ClassDecorator => {
+export const ClassDec = (): ClassDecorator => {
     return (target) => {
         return;
     }
 };
-const PropertyDec = (): PropertyDecorator => {
+export const PropertyDec = (): PropertyDecorator => {
     return (target, key) => {
         return;
     }
 };
-const MethodDec = (): MethodDecorator => {
+export const MethodDec = (): MethodDecorator => {
     return (target, key, desc) => {
         return;
     }

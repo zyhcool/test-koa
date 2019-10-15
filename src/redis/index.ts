@@ -2,6 +2,8 @@ import RedisClient from "../database/redisClient";
 import { createHash } from "crypto";
 import { IAsyncEventReqData, redisKeys } from "../types/redis.type";
 import { IStandardRequest } from "../types/common.type";
+import { Mongoose } from "mongoose";
+import { sortJson } from "../util/json.util";
 
 export default class Redis {
     private static controller: any;
@@ -49,12 +51,130 @@ export default class Redis {
         }
     }
 
-    static async getById(id: string):Promise<string>{
+    static async getById(id: string): Promise<string> {
         let value = await this.commonConnection.get(id);
         return value;
     }
 
-    static async storeById(id:string,value: string){
-        await this.commonConnection.set(id,value);
+    static async storeById(id: string, value: string) {
+        await this.commonConnection.set(id, value);
+    }
+
+    static async initMongooseWithRedis(mongoose: Mongoose) {
+        let that = this;
+        const exec = mongoose.Query.prototype.exec;
+
+        mongoose.Query.prototype["cache"] = function (customKey: string) {
+            this._redisCache = true;
+            this._key = customKey;
+            return this;
+        }
+
+        mongoose.Query.prototype.exec = function () {
+            let args = arguments;
+            let key = this._key || this.getCacheKey();
+            if (!this._redisCache && !this._redisCache) {
+                return exec.apply(this, args);
+            } else {
+                return new Promise((resolve, rejects) => {
+                    try {
+                        that.commonConnection.get(key).then((value) => {
+                            if (value) {
+                                resolve(JSON.parse(value));
+                            } else {
+                                exec
+                                    .apply(this, args)
+                                    .then(async (results) => {
+                                        let result = await that.commonConnection.set(key, JSON.stringify(results), "ex", 10);
+                                        if (result === "OK") {
+                                            resolve(results);
+                                        }
+                                    })
+                                    .catch((e) => {
+                                        rejects(e);
+                                    })
+                            }
+                        });
+                    } catch (e) {
+                        rejects(e);
+                    }
+                })
+
+            }
+        }
+
+        mongoose.Query.prototype["getCacheKey"] = function () {
+            const key = {
+                model: this.model.modelName,
+                op: this.op,
+                skip: this.options.skip,
+                limit: this.options.limit,
+                sort: this.options.sort,
+                _options: this._mongooseOptions,
+            };
+            let sortedJson = sortJson(key);
+            return createHash("md5").update(JSON.stringify(sortedJson)).digest("hex");
+        }
+
+        ////////  aggregate
+        const aggregate = mongoose.Model.aggregate;
+        let hasBeenExtended = false;
+
+        mongoose.Model.aggregate = function () {
+            const res = aggregate.apply(this, arguments);
+            if (!hasBeenExtended && res.constructor && res.constructor.name === 'Aggregate') {
+                extend(res.constructor);
+                hasBeenExtended = true;
+            }
+            return res;
+        };
+
+        function extend(Aggregate) {
+            const exec = Aggregate.prototype.exec;
+
+            Aggregate.prototype.exec = function () {
+                let args = arguments;
+                let key = this._key || this.getCacheKey();
+                if (!this._redisCache && !this._redisCache) {
+                    return exec.apply(this, args);
+                } else {
+                    return new Promise((resolve, rejects) => {
+                        try {
+                            that.commonConnection.get(key).then((value) => {
+                                if (value) {
+                                    resolve(JSON.parse(value));
+                                } else {
+                                    exec
+                                        .apply(this, args)
+                                        .then(async (results) => {
+                                            let result = await that.commonConnection.set(key, JSON.stringify(results), "ex", 10);
+                                            if (result === "OK") {
+                                                resolve(results);
+                                            }
+                                        })
+                                        .catch((e) => {
+                                            rejects(e);
+                                        })
+                                }
+                            });
+                        } catch (e) {
+                            rejects(e);
+                        }
+                    })
+
+                }
+            };
+
+            Aggregate.prototype.cache = function (customKey: string = '') {
+                this._redisCache = true;
+                this._key = customKey;
+                return this;
+            };
+
+            Aggregate.prototype.getCacheKey = function () {
+                let sortedJson = sortJson(this._pipeline);
+                return createHash("md5").update(JSON.stringify(sortedJson)).digest("hex");
+            };
+        }
     }
 }

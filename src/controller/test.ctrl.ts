@@ -6,23 +6,9 @@ import WebsocketClient from "../../websocket";
 import { IStandardRequest, IResonse } from "../types/common.type";
 import { ITest } from "../types/test.type";
 import "reflect-metadata"
+import { ClassDec, PropertyDec, MethodDec } from "../redis/decorator/common.di";
 
 
-const ClassDec = (): ClassDecorator => {
-    return (target) => {
-        return;
-    }
-};
-const PropertyDec = (): PropertyDecorator => {
-    return (target, key) => {
-        return;
-    }
-};
-const methodDec = (): MethodDecorator => {
-    return (target, key, desc) => {
-        return;
-    }
-};
 @ClassDec()
 export default class TestController extends BaseController<TestService> {
     constructor(service: TestService) {
@@ -50,7 +36,7 @@ export default class TestController extends BaseController<TestService> {
         return response;
     }
 
-    @methodDec()
+    @MethodDec()
     async findTest(data: IStandardRequest, ws?: WebsocketClient) {
         let response: IResonse<ITest> = await this.service.findTest(data.body.id) as any;
         return response;
