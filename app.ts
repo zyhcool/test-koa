@@ -14,7 +14,6 @@ import Redis from "./src/redis";
 import BaseController from "./src/controller/base.ctrl";
 import { IStandardRequest } from "./src/types/common.type";
 import { InjectService } from "./src/redis/decorator/common.di";
-import { Factory } from "./test/test";
 
 const controllers: any = {};
 main();
