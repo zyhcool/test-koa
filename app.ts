@@ -14,6 +14,7 @@ import Redis from "./src/redis";
 import BaseController from "./src/controller/base.ctrl";
 import { IStandardRequest } from "./src/types/common.type";
 import { InjectService } from "./src/redis/decorator/common.di";
+import { errorHandling } from "./src/middleware/errorHandling";
 
 const controllers: any = {};
 main();
@@ -75,24 +76,11 @@ async function startServer() {
 
     app.use(async (ctx, next) => {
         await next();
-        console.log(`${ctx.method} ${ctx.path} ${ctx.status} `);
+        console.log(`${ctx.method} ${ctx.path}?eventName=${ctx.query.eventName} ${ctx.status} `);
     });
 
-    app.use(async (ctx, next) => {
-        try {
-            ctx.set("Access-Control-Allow-Origin", "*");
-            ctx.set("Access-Control-Allow-Headers",
-                `Content-Type,Accept,X-Requested-With`);
-            ctx.set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, HEAD, OPTIONS");
-            await next();
-        } catch (err) {
-            ctx.body = {
-                code: 2,
-                message: "服务器错误",
-            };
-            console.log(err);
-        }
-    });
+    // 错误处理
+    app.use(errorHandling(controllers));
 
 
     const router = distributeRouter();
@@ -207,6 +195,7 @@ async function parseRequest(ctx: Koa.BaseContext, next: () => Promise<any>) {
 
 async function getResponse(request: IStandardRequest, instance: BaseController<any>, eventName: string) {
     let response: any = {};
+    console.log("in getresponse")
     if (!instance) {
         return {
             code: 404,

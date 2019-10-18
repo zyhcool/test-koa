@@ -8,7 +8,7 @@ export default class TestService extends BaseService {
     constructor() {
         super();
     }
-    async test(){
+    async test() {
         console.log("from test service");
     }
 
@@ -37,10 +37,10 @@ export default class TestService extends BaseService {
     }
 
     @rdsFindById() // 先查缓存再查数据库
-    async findTest(id: string){
+    async findTest(id: string) {
         // let en = await Test.findById(id).exec();
         let en = await Test.findById(id).exec();
-        console.log("en",en)
+        console.log("en", en);
         return en;
     }
 }

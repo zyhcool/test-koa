@@ -8,7 +8,8 @@
   "private": true,
   "scripts": {
     "start": "ts-node-dev --respawn --transpileOnly app.ts",
-    "server": "ts-node app.ts"
+    "server": "ts-node app.ts",
+    "test": "jest --testPathPattern=./jestTest"
   },
   "dependencies": {
     "@types/koa": "^2.0.49",
@@ -27,5 +28,9 @@
     "reflect-metadata": "^0.1.13",
     "ts-node-dev": "^1.0.0-pre.41",
     "typescript": "^3.5.3"
+  },
+  "devDependencies": {
+    "jest": "^24.9.0",
+    "supertest": "^4.0.2"
   }
 }
