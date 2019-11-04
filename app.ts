@@ -68,6 +68,12 @@ async function startServer() {
     const router = new Router();
 
 
+    router.get("/test", async (ctx, next) => {
+        console.time("he")
+        for (let i = 0; i < 1e8; i++) { }
+        console.timeEnd("he")
+        await next();
+    })
 
     router.post("/upload", async (ctx, next) => {
         const file = ctx.request.files.file;
@@ -83,14 +89,14 @@ async function startServer() {
         await next();
     })
 
-    router.post("/test", async (ctx, next) => {
-        let id = ctx.request.body.id;
-        for (let i = 0; i < 7 * (10 ** 8); i++) { };
-        console.log(id);
-        ctx.body = {
-            code: `${id}2`,
-        }
-    })
+    // router.post("/test", async (ctx, next) => {
+    //     let id = ctx.request.body.id;
+    //     for (let i = 0; i < 7 * (10 ** 8); i++) { };
+    //     console.log(id);
+    //     ctx.body = {
+    //         code: `${id}2`,
+    //     }
+    // })
 
     app.use(router.routes()).use(router.allowedMethods());
 
